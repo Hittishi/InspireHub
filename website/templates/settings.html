@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<h2 align="center">Settings</h2>
+<div class="container">
+    <div class="row">
+        <div class="col-md-6">
+            <h3>Edit Personal Information</h3>
+            <form method="POST" action="/update-profile">
+                <div class="form-group">
+                    <label for="firstName">First Name:</label>
+                    <input type="text" class="form-control" id="firstName" name="firstName" value="{{ user.firstName }}">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}">
+                </div>
+                <div class="form-group">
+                    <label for="newPassword">New Password</label>
+                    <input type="password" class="form-control" id="newPassword" name="newPassword">
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" class="form-control" id="confirmPassword" name="confirmPassword">
+                </div>
+                <button type="submit" class="btn btn-primary">Update Personal Information</button>
+            </form>
+        </div>
+        <div class="col-md-6">
+            <h3>Edit Notes</h3>
+            <ul class="list-group">
+                {% for note in user.notes %}
+                <li class="list-group-item">
+                    <form method="POST" action="/update-note/{{ note.id }}">
+                        <div class="form-group">
+                            <textarea class="form-control" rows="3" name="note">{{ note.data }}</textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update Note</button>
+                        <button type="button" class="btn btn-danger" onclick="deleteNote({{ note.id }})">Delete Note</button>
+                    </form>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

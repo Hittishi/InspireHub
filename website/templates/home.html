@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<h1 align="center">Explore Stories</h1>
+<ul class="list-group list-group-flush" id="notes">
+    {% for note in notes %}
+    <li class="list-group-item">
+        <strong>{{ note.user.firstName }}:</strong> {{ note.data }}
+        <div>
+            <button type="button" class="btn btn-link" onclick="likeNote({{ note.id }})">
+                <i class="fa fa-thumbs-up"></i> 
+                <span id="like-count-{{ note.id }}">{{ note.like_count }}</span>
+                <span id="like-text-{{ note.id }}">{{ 'Liked' if note.liked_by_user else 'Like' }}</span>
+            </button>
+            <button type="button" class="btn btn-link" onclick="toggleCommentBox({{ note.id }})">
+                <i class="fa fa-comment"></i> Comment
+            </button>
+        </div>
+        <div id="comments-{{ note.id }}" style="display: none;">
+            <form method="POST" onsubmit="return addComment(event, {{ note.id }})">
+                <textarea name="comment" class="form-control" placeholder="Add a comment"></textarea>
+                <br/>
+                <button type="submit" class="btn btn-primary">Add Comment</button>
+            </form>
+            <ul class="list-group mt-2" id="comment-list-{{ note.id }}">
+                {% for comment in note.comments %}
+                <li class="list-group-item" id="comment-{{ comment.id }}">
+                    {{ comment.user.firstName }}: {{ comment.data }}
+                    {% if comment.user_id == current_user.id %}
+                    <button type="button" class="close" onclick="deleteComment({{ comment.id }})">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}
+{% block javascript %}
+<script type="text/javascript">
+    function toggleCommentBox(noteId) {
+        var commentBox = document.getElementById("comments-" + noteId);
+        commentBox.style.display = commentBox.style.display === "none" ? "block" : "none";
+    }
+
+    function addComment(event, noteId) {
+        event.preventDefault();
+        var commentText = event.target.comment.value.trim();  // Trim whitespace
+        if (commentText.length < 1) {
+            alert('Comment cannot be empty.');
+            return false;
+        }
+        fetch('/add-comment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ noteId: noteId, comment: commentText })
+        }).then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  var commentList = document.getElementById("comment-list-" + noteId);
+                  var newComment = document.createElement("li");
+                  newComment.className = "list-group-item";
+                  newComment.id = `comment-${data.comment.id}`;
+                  newComment.innerHTML = `${data.comment.user}: ${data.comment.data} 
+                      <button type="button" class="close" onclick="deleteComment(${data.comment.id})">
+                          <span aria-hidden="true">&times;</span>
+                      </button>`;
+                  commentList.appendChild(newComment);
+                  event.target.comment.value = "";  // Clear the comment input
+              } else {
+                  alert('Error adding comment');
+              }
+          });
+        return false;
+    }
+
+    function deleteComment(commentId) {
+        fetch('/delete-comment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ commentId: commentId })
+        }).then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  var commentElement = document.getElementById(`comment-${commentId}`);
+                  commentElement.remove();
+              } else {
+                  alert('Error deleting comment');
+              }
+          });
+    }
+
+    function likeNote(noteId) {
+        fetch('/like-note', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ noteId: noteId })
+        }).then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  var likeCount = document.getElementById("like-count-" + noteId);
+                  var likeText = document.getElementById("like-text-" + noteId);
+                  var currentCount = parseInt(likeCount.textContent);
+                  if (data.liked) {
+                      likeCount.textContent = currentCount + 1;
+                      likeText.textContent = 'Liked';
+                  } else {
+                      likeCount.textContent = currentCount - 1;
+                      likeText.textContent = 'Like';
+                  }
+              } else {
+                  alert('Error liking note');
+              }
+          });
+    }
+</script>
+{% endblock %}
